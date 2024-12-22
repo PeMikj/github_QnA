@@ -12,6 +12,7 @@
 
 ### 1. Клонируйте репозиторий
 git clone https://github.com/PeMikj/streamlit-rag-app.git
+
 cd streamlit-rag-app
 
 ### 2. Создайте и активируйте виртуальное окружение
