@@ -11,17 +11,20 @@
 ## Установка и запуск
 
 ### 1. Клонируйте репозиторий
+```bash
 git clone https://github.com/PeMikj/streamlit-rag-app.git
-
 cd streamlit-rag-app
-
+```
 ### 2. Создайте и активируйте виртуальное окружение
+```bash
 python -m venv venv
-
 source venv/bin/activate
-
+```
 ### 3. Установите зависимости
+```bash
 pip install -r requirements.txt
-
+```
 ### 4. Запустите приложение
+```bash
 streamlit run app.py
+```
