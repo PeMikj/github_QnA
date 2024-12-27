@@ -13,81 +13,6 @@ Tasks:
         use fast api
         Create an API endpoint to clone a GitHub repository using GitPython.
         Create an API endpoint to extract the repository structure as a tree.
-=== cloned_repo/README.md ===
-The project enables users to load a GitHub repository, select files or folders for vectorization, and ask questions about the code, leveraging embeddings stored in a Faiss database for intelligent retrieval. Built with FastAPI for the backend, React for the frontend, and LangChain for code processing, it uses Faiss for vector storage and OpenAI/Hugging Face models for embeddings, ensuring scalability and efficiency.
-
-Sprint 1: Repository Loading and Structure Display
-Goals:
-
-    Load a GitHub repository.
-    Display its structure with selectable files and folders.
-
-Tasks:
-
-    Backend:
-        set up environment and create requirments file
-        Create an API endpoint to clone a GitHub repository using GitPython.
-        Create an API endpoint to extract the repository structure as a tree.
-    Frontend:
-        Implement a form for entering a GitHub URL.
-        Display the repository structure as a tree view with checkboxes.
-        Set all items as selected by default.
-
-Deliverable:
-
-The user can input a GitHub URL, view the repository structure in a tree format, and select files and folders for processing.
-Sprint 2: File Processing and Content Extraction
-Goals:
-
-    Process selected files and extract meaningful content.
-
-Tasks:
-
-    Backend:
-        Extract content from selected files (e.g., code blocks, comments, or text).
-        Use LangChain to parse and structure the extracted content.
-    Frontend:
-        Implement a "Submit" button to send selected files/folders to the backend for processing.
-        Show a progress indicator during the processing stage.
-
-Deliverable:
-
-The user can submit selected files for processing, and the backend extracts and structures the content.
-Sprint 3: Vectorization and Faiss Database Creation
-Goals:
-
-    Generate embeddings for the extracted content.
-    Store embeddings in a Faiss database.
-
-Tasks:
-
-    Backend:
-        Use a pre-trained embedding model (e.g., OpenAI, Hugging Face) to generate vector representations of the extracted content.
-        Save these vectors in a Faiss database.
-    Frontend:
-        Display a success notification once vectorization is complete.
-
-Deliverable:
-
-The selected data is processed, vectorized, and stored in a Faiss database.
-Sprint 4: Search and Answering Questions
-Goals:
-
-    Enable question answering using the Faiss database.
-
-Tasks:
-
-    Backend:
-        Develop an API endpoint to accept user questions.
-        Query the Faiss database to find relevant vectorized content.
-        Use LangChain to construct meaningful answers.
-    Frontend:
-        Create a form to input questions.
-        Display answers in a readable format with code snippets highlighted.
-
-Deliverable:
-
-The user can ask questions about the repository, and the system provides relevant answers using the Faiss database.
 === cloned_repo/docker-compose.yml ===
 version: '3.8'
 
@@ -112,283 +37,257 @@ services:
         Display the repository structure as a tree view with checkboxes.
         Set all items as selected by default.
 
-=== cloned_repo/frontend/package-lock.json ===
+=== cloned_repo/backend/requirements.txt ===
+fastapi
+uvicorn
+gitpython
+=== cloned_repo/backend/main.py ===
+from fastapi import FastAPI, HTTPException
+import git
+import os
+
+app = FastAPI()
+
+@app.post("/clone-repo/")
+async def clone_repo(repo_url: str):
+    repo_name = repo_url.split("/")[-1].replace(".git", "")
+    if not os.path.exists(repo_name):
+        git.Repo.clone_from(repo_url, repo_name)
+    return {"message": f"Repository {repo_name} cloned successfully."}
+
+def get_directory_structure(rootdir):
+    """
+    Creates a nested dictionary that represents the folder structure of rootdir.
+    :param rootdir: Root directory to analyze
+    :return: A dictionary representing the directory structure
+    """
+    dir_structure = {}
+
+    for dirpath, dirnames, filenames in os.walk(rootdir):
+        # Get the relative path from the root directory
+        folder = os.path.relpath(dirpath, rootdir)
+        # Start at the root of the structure
+        subdir = dir_structure
+        
+        # Navigate to the correct subdirectory level in the structure
+        if folder != '.':
+            for part in folder.split(os.sep):
+                subdir = subdir.setdefault(part, {})
+        
+        # Add subdirectories
+        for dirname in dirnames:
+            subdir[dirname] = {}
+        
+        # Add files
+        for filename in filenames:
+            subdir[filename] = None
+
+    return dir_structure
+
+@app.get("/repo-structure/")
+async def repo_structure(repo_name: str):
+    if not os.path.exists(repo_name):
+        raise HTTPException(status_code=404, detail="Repository not found")
+    structure = get_directory_structure(repo_name)
+    return structure
+=== cloned_repo/frontend/public/robots.txt ===
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Disallow:
+
+=== cloned_repo/frontend/public/manifest.json ===
 {
-  "name": "frontend",
-  "version": "0.1.0",
-  "lockfileVersion": 3,
-  "requires": true,
-  "packages": {
-    "": {
-      "name": "frontend",
-      "version": "0.1.0",
-      "dependencies": {
-        "cra-template": "1.2.0",
-        "react": "^18.3.1",
-        "react-checkbox-tree": "^1.8.0",
-        "react-dom": "^18.3.1",
-        "react-scripts": "5.0.1",
-        "web-vitals": "^4.2.4"
-      }
+  "short_name": "React App",
+  "name": "Create React App Sample",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
     },
-    "node_modules/@alloc/quick-lru": {
-      "version": "5.2.0",
-      "resolved": "https://registry.npmjs.org/@alloc/quick-lru/-/quick-lru-5.2.0.tgz",
-      "integrity": "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==",
-      "engines": {
-        "node": ">=10"
-      },
-      "funding": {
-        "url": "https://github.com/sponsors/sindresorhus"
-      }
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
     },
-    "node_modules/@ampproject/remapping": {
-      "version": "2.3.0",
-      "resolved": "https://registry.npmjs.org/@ampproject/remapping/-/remapping-2.3.0.tgz",
-      "integrity": "sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==",
-      "dependencies": {
-        "@jridgewell/gen-mapping": "^0.3.5",
-        "@jridgewell/trace-mapping": "^0.3.24"
-      },
-      "engines": {
-        "node": ">=6.0.0"
-      }
-    },
-    "node_modules/@babel/code-frame": {
-      "version": "7.26.2",
-      "resolved": "https://registry.npmjs.org/@babel/code-frame/-/code-frame-7.26.2.tgz",
-      "integrity": "sha512-RJlIHRueQgwWitWgF8OdFYGZX328Ax5BCemNGlqHfplnRT9ESi8JkFlvaVYbS+UubVY6dpv87Fs2u5M29iNFVQ==",
-      "dependencies": {
-        "@babel/helper-validator-identifier": "^7.25.9",
-        "js-tokens": "^4.0.0",
-        "picocolors": "^1.0.0"
-      },
-      "engines": {
-        "node": ">=6.9.0"
-      }
-    },
-    "node_modules/@babel/compat-data": {
-      "version": "7.26.3",
-      "resolved": "https://registry.npmjs.org/@babel/compat-data/-/compat-data-7.26.3.tgz",
-      "integrity": "sha512-nHIxvKPniQXpmQLb0vhY3VaFb3S0YrTAwpOWJZh1wn3oJPjJk9Asva204PsBdmAE8vpzfHudT8DB0scYvy9q0g==",
-      "engines": {
-        "node": ">=6.9.0"
-      }
-    },
-    "node_modules/@babel/core": {
-      "version": "7.26.0",
-      "resolved": "https://registry.npmjs.org/@babel/core/-/core-7.26.0.tgz",
-      "integrity": "sha512-i1SLeK+DzNnQ3LL/CswPCa/E5u4lh1k6IAEphON8F+cXt0t9euTshDru0q7/IqMa1PMPz5RnHuHscF8/ZJsStg==",
-      "dependencies": {
-        "@ampproject/remapping": "^2.2.0",
-        "@babel/code-frame": "^7.26.0",
-        "@babel/generator": "^7.26.0",
-        "@babel/helper-compilation-targets": "^7.25.9",
-        "@babel/helper-module-transforms": "^7.26.0",
-        "@babel/helpers": "^7.26.0",
-        "@babel/parser": "^7.26.0",
-        "@babel/template": "^7.25.9",
-        "@babel/traverse": "^7.25.9",
-        "@babel/types": "^7.26.0",
-        "convert-source-map": "^2.0.0",
-        "debug": "^4.1.0",
-        "gensync": "^1.0.0-beta.2",
-        "json5": "^2.2.3",
-        "semver": "^6.3.1"
-      },
-      "engines": {
-        "node": ">=6.9.0"
-      },
-      "funding": {
-        "type": "opencollective",
-        "url": "https://opencollective.com/babel"
-      }
-    },
-    "node_modules/@babel/core/node_modules/semver": {
-      "version": "6.3.1",
-      "resolved": "https://registry.npmjs.org/semver/-/semver-6.3.1.tgz",
-      "integrity": "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==",
-      "bin": {
-        "semver": "bin/semver.js"
-      }
-    },
-    "node_modules/@babel/eslint-parser": {
-      "version": "7.25.9",
-      "resolved": "https://registry.npmjs.org/@babel/eslint-parser/-/eslint-parser-7.25.9.tgz",
-      "integrity": "sha512-5UXfgpK0j0Xr/xIdgdLEhOFxaDZ0bRPWJJchRpqOSur/3rZoPbqqki5mm0p4NE2cs28krBEiSM2MB7//afRSQQ==",
-      "dependencies": {
-        "@nicolo-ribaudo/eslint-scope-5-internals": "5.1.1-v1",
-        "eslint-visitor-keys": "^2.1.0",
-        "semver": "^6.3.1"
-      },
-      "engines": {
-        "node": "^10.13.0 || ^12.13.0 || >=14.0.0"
-      },
-      "peerDependencies": {
-        "@babel/core": "^7.11.0",
-        "eslint": "^7.5.0 || ^8.0.0 || ^9.0.0"
-      }
-    },
-    "node_modules/@babel/eslint-parser/node_modules/eslint-visitor-keys": {
-      "version": "2.1.0",
-      "resolved": "https://registry.npmjs.org/eslint-visitor-keys/-/eslint-visitor-keys-2.1.0.tgz",
-      "integrity": "sha512-0rSmRBzXgDzIsD6mGdJgevzgezI534Cer5L/vyMX0kHzT/jiB43jRhd9YUlMGYLQy2zprNmoT8qasCGtY+QaKw==",
-      "engines": {
-        "node": ">=10"
-      }
-    },
-    "node_modules/@babel/eslint-parser/node_modules/semver": {
-      "version": "6.3.1",
-      "resolved": "https://registry.npmjs.org/semver/-/semver-6.3.1.tgz",
-      "integrity": "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==",
-      "bin": {
-        "semver": "bin/semver.js"
-      }
-    },
-    "node_modules/@babel/generator": {
-      "version": "7.26.3",
-      "resolved": "https://registry.npmjs.org/@babel/generator/-/generator-7.26.3.tgz",
-      "integrity": "sha512-6FF/urZvD0sTeO7k6/B15pMLC4CHUv1426lzr3N01aHJTl046uCAh9LXW/fzeXXjPNCJ6iABW5XaWOsIZB93aQ==",
-      "dependencies": {
-        "@babel/parser": "^7.26.3",
-        "@babel/types": "^7.26.3",
-        "@jridgewell/gen-mapping": "^0.3.5",
-        "@jridgewell/trace-mapping": "^0.3.25",
-        "jsesc": "^3.0.2"
-      },
-      "engines": {
-        "node": ">=6.9.0"
-      }
-    },
-    "node_modules/@babel/helper-annotate-as-pure": {
-      "version": "7.25.9",
-      "resolved": "https://registry.npmjs.org/@babel/helper-annotate-as-pure/-/helper-annotate-as-pure-7.25.9.tgz",
-      "integrity": "sha512-gv7320KBUFJz1RnylIg5WWYPRXKZ884AGkYpgpWW02TH66Dl+HaC1t1CKd0z3R4b6hdYEcmrNZHUmfCP+1u3/g==",
-      "dependencies": {
-        "@babel/types": "^7.25.9"
-      },
-      "engines": {
-        "node": ">=6.9.0"
-      }
-    },
-    "node_modules/@babel/helper-compilation-targets": {
-      "version": "7.25.9",
-      "resolved": "https://registry.npmjs.org/@babel/helper-compilation-targets/-/helper-compilation-targets-7.25.9.tgz",
-      "integrity": "sha512-j9Db8Suy6yV/VHa4qzrj9yZfZxhLWQdVnRlXxmKLYlhWUVB1sB2G5sxuWYXk/whHD9iW76PmNzxZ4UCnTQTVEQ==",
-      "dependencies": {
-        "@babel/compat-data": "^7.25.9",
-        "@babel/helper-validator-option": "^7.25.9",
-        "browserslist": "^4.24.0",
-        "lru-cache": "^5.1.1",
-        "semver": "^6.3.1"
-      },
-      "engines": {
-        "node": ">=6.9.0"
-      }
-    },
-    "node_modules/@babel/helper-compilation-targets/node_modules/semver": {
-      "version": "6.3.1",
-      "resolved": "https://registry.npmjs.org/semver/-/semver-6.3.1.tgz",
-      "integrity": "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==",
-      "bin": {
-        "semver": "bin/semver.js"
-      }
-    },
-    "node_modules/@babel/helper-create-class-features-plugin": {
-      "version": "7.25.9",
-      "resolved": "https://registry.npmjs.org/@babel/helper-create-class-features-plugin/-/helper-create-class-features-plugin-7.25.9.tgz",
-      "integrity": "sha512-UTZQMvt0d/rSz6KI+qdu7GQze5TIajwTS++GUozlw8VBJDEOAqSXwm1WvmYEZwqdqSGQshRocPDqrt4HBZB3fQ==",
-      "dependencies": {
-        "@babel/helper-annotate-as-pure": "^7.25.9",
-        "@babel/helper-member-expression-to-functions": "^7.25.9",
-        "@babel/helper-optimise-call-expression": "^7.25.9",
-        "@babel/helper-replace-supers": "^7.25.9",
-        "@babel/helper-skip-transparent-expression-wrappers": "^7.25.9",
-        "@babel/traverse": "^7.25.9",
-        "semver": "^6.3.1"
-      },
-      "engines": {
-        "node": ">=6.9.0"
-      },
-      "peerDependencies": {
-        "@babel/core": "^7.0.0"
-      }
-    },
-    "node_modules/@babel/helper-create-class-features-plugin/node_modules/semver": {
-      "version": "6.3.1",
-      "resolved": "https://registry.npmjs.org/semver/-/semver-6.3.1.tgz",
-      "integrity": "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==",
-      "bin": {
-        "semver": "bin/semver.js"
-      }
-    },
-    "node_modules/@babel/helper-create-regexp-features-plugin": {
-      "version": "7.26.3",
-      "resolved": "https://registry.npmjs.org/@babel/helper-create-regexp-features-plugin/-/helper-create-regexp-features-plugin-7.26.3.tgz",
-      "integrity": "sha512-G7ZRb40uUgdKOQqPLjfD12ZmGA54PzqDFUv2BKImnC9QIfGhIHKvVML0oN8IUiDq4iRqpq74ABpvOaerfWdong==",
-      "dependencies": {
-        "@babel/helper-annotate-as-pure": "^7.25.9",
-        "regexpu-core": "^6.2.0",
-        "semver": "^6.3.1"
-      },
-      "engines": {
-        "node": ">=6.9.0"
-      },
-      "peerDependencies": {
-        "@babel/core": "^7.0.0"
-      }
-    },
-    "node_modules/@babel/helper-create-regexp-features-plugin/node_modules/semver": {
-      "version": "6.3.1",
-      "resolved": "https://registry.npmjs.org/semver/-/semver-6.3.1.tgz",
-      "integrity": "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==",
-      "bin": {
-        "semver": "bin/semver.js"
-      }
-    },
-    "node_modules/@babel/helper-define-polyfill-provider": {
-      "version": "0.6.3",
-      "resolved": "https://registry.npmjs.org/@babel/helper-define-polyfill-provider/-/helper-define-polyfill-provider-0.6.3.tgz",
-      "integrity": "sha512-HK7Bi+Hj6H+VTHA3ZvBis7V/6hu9QuTrnMXNybfUf2iiuU/N97I8VjB+KbhFF8Rld/Lx5MzoCwPCpPjfK+n8Cg==",
-      "dependencies": {
-        "@babel/helper-compilation-targets": "^7.22.6",
-        "@babel/helper-plugin-utils": "^7.22.5",
-        "debug": "^4.1.1",
-        "lodash.debounce": "^4.0.8",
-        "resolve": "^1.14.2"
-      },
-      "peerDependencies": {
-        "@babel/core": "^7.4.0 || ^8.0.0-0 <8.0.0"
-      }
-    },
-    "node_modules/@babel/helper-member-expression-to-functions": {
-      "version": "7.25.9",
-      "resolved": "https://registry.npmjs.org/@babel/helper-member-expression-to-functions/-/helper-member-expression-to-functions-7.25.9.tgz",
-      "integrity": "sha512-wbfdZ9w5vk0C0oyHqAJbc62+vet5prjj01jjJ8sKn3j9h3MQQlflEdXYvuqRWjHnM12coDEqiC1IRCi0U/EKwQ==",
-      "dependencies": {
-        "@babel/traverse": "^7.25.9",
-        "@babel/types": "^7.25.9"
-      },
-      "engines": {
-        "node": ">=6.9.0"
-      }
-    },
-    "node_modules/@babel/helper-module-imports": {
-      "version": "7.25.9",
-      "resolved": "https://registry.npmjs.org/@babel/helper-module-imports/-/helper-module-imports-7.25.9.tgz",
-      "integrity": "sha512-tnUA4RsrmflIM6W6RFTLFSXITtl0wKjgpnLgXyowocVPrbYrLUXSBXDgTs8BlbmIzIdlBySRQjINYs2BAkiLtw==",
-      "dependencies": {
-        "@babel/traverse": "^7.25.9",
-        "@babel/types": "^7.25.9"
-      },
-      "engines": {
-        "node": ">=6.9.0"
-      }
-    },
-    "node_modules/@babel/helper-module-transforms": {
-      "version": "7.26.0",
-      "resolved": "https://registry.npmjs.org/@babel/helper-module-transforms/-/helper-module-transforms-7.26.0.tgz",
-      "integrity": "sha512-xO+xu6B5K2czEnQye6BHA7DolFFmS3LB7stHZFaOLb1pAwO1HWLS8fXA+eh0A2yIvltPVmx3eNNDBJA2SLHXFw==",
-      "dependencies": {
-        "@babel/helper-module-imports": "^7.25.9",
-        "@babel/helper-validator-identifier": "^7.25.
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
+
+=== cloned_repo/frontend/public/index.html ===
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>React App</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+  </body>
+</html>
+
+=== cloned_repo/frontend/src/App.js ===
+import React, { useState } from 'react';
+import GitHubForm from './GitHubForm';
+import RepoTreeView from './RepoTreeView';
+
+const App = () => {
+    const [nodes, setNodes] = useState([]);
+    const [error, setError] = useState(null);
+
+    const handleFormSubmit = async (url) => {
+        try {
+            // Hardcoded sample directory structure
+            const sampleNodes = [
+                {
+                    value: 'src',
+                    label: 'src',
+                    children: [
+                        {
+                            value: 'components',
+                            label: 'components',
+                            children: [
+                                { value: 'GitHubForm.js', label: 'GitHubForm.js' },
+                                { value: 'RepoTreeView.js', label: 'RepoTreeView.js' }
+                            ]
+                        },
+                        { value: 'App.js', label: 'App.js' },
+                        { value: 'index.js', label: 'index.js' }
+                    ]
+                },
+                { value: 'package.json', label: 'package.json' },
+                { value: 'README.md', label: 'README.md' }
+            ];
+            setNodes(sampleNodes);
+        } catch (error) {
+            console.error('Error:', error);
+            setError(error.message);
+        }
+    };
+
+    return (
+        <div>
+            <GitHubForm onSubmit={handleFormSubmit} />
+            {error && <p style={{ color: 'red' }}>{error}</p>}
+            <RepoTreeView nodes={nodes} />
+        </div>
+    );
+};
+
+export default App;
+=== cloned_repo/frontend/src/setupTests.js ===
+// jest-dom adds custom jest matchers for asserting on DOM nodes.
+// allows you to do things like:
+// expect(element).toHaveTextContent(/react/i)
+// learn more: https://github.com/testing-library/jest-dom
+import '@testing-library/jest-dom';
+
+=== cloned_repo/frontend/src/index.js ===
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+import reportWebVitals from './reportWebVitals';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();
+
+=== cloned_repo/frontend/src/App.test.js ===
+import { render, screen } from '@testing-library/react';
+import App from './App';
+
+test('renders learn react link', () => {
+  render(<App />);
+  const linkElement = screen.getByText(/learn react/i);
+  expect(linkElement).toBeInTheDocument();
+});
+
+=== cloned_repo/frontend/src/GitHubForm.js ===
+import React, { useState } from 'react';
+
+const GitHubForm = ({ onSubmit }) => {
+    const [url, setUrl] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSubmit(url);
+    };
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <input
+                type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="Enter GitHub URL"
+            />
+            <button type="submit">Submit</button>
+        </form>
+    );
+};
+
+export default GitHubForm;
+=== cloned_repo/frontend/src/reportWebVitals.js ===
+const reportWebVitals = onPerfEntry => {
+  if (onPerfEntry && onPerfEntry instanceof Function) {
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      getCLS(onPerfEntry);
+      getFID(onPerfEntry);
+      getFCP(onPerfEntry);
+      getLCP(onPerfEntry);
+      getTTFB(onPerfEntry);
+    });
+  }
+};
+
+export default reportWebVitals;
